@@ -1,241 +1,187 @@
 import random
 
-board = [str(cell) for cell in range(1, 101)]
+list_not_optimal_step = []
+list_bord = [str(cell) for cell in range(1,101)]
+board = map(list, zip(*[iter(list_bord)]*10))
+board = list(board)
 
-remain_cells = [str(cell) for cell in range(1, 101)]
-
-
-def print_board(board):
-    for i in range(100):
-        print(board[i], end='\t')
-        if (i + 1) % 10 == 0:
-            print('\n')
-
-
-def check_cell(index, mark, board):
-    if board[index] in ('X', 'O'):
-        return True
-
-
-def put_mark_remove_cell(index, mark, remain_cells, board):
-    remain_cells.remove(board[index])
-    board[index] = mark
-
-
-def select_mark():
-    player_mark = ''
-    while player_mark not in ('X', 'O'):
-        player_mark = input('Выберете, за кого вы будете играть - Х или О? ').upper()
-        if player_mark == 'X':
-            computer_mark = 'O'
+def show_board(board):
+    for i in board:
+        if board.index(i) == 0:
+            print('  '.join(i))
         else:
-            computer_mark = 'X'
-    return player_mark, computer_mark
+            print(' '.join(i))
+
+def step_user(step):
+    count_ = 0
+    for item in board:
+        if step in item:
+            count_ = board.index(item)
+            index_ = item.index(step)
+            item[item.index(step)] = 'X'
+    return board, index_, count_
+
+def optimal_var(list_, list_not_optimal_step, x_or_o):
+    for i in list_:
+        if x_or_o in i:
+            for j in i:
+                list_not_optimal_step.append(j)
+
+    return  list_not_optimal_step
+
+def get_dia_row_col():
+    max_col = len(board[0])
+    max_row = len(board)
+    cols = [[] for _ in range(max_col)]
+    rows = [[] for _ in range(max_row)]
+    fdiag = [[] for _ in range(max_row + max_col - 1)]
+    bdiag = [[] for _ in range(len(fdiag))]
+    min_bdiag = -max_row + 1
+
+    for x in range(max_col):
+        for y in range(max_row):
+            cols[x].append(board[y][x])
+            rows[y].append(board[y][x])
+            fdiag[x + y].append(board[y][x])
+            bdiag[x - y - min_bdiag].append(board[y][x])
+
+    return  cols, rows, fdiag, bdiag
 
 
-def check_diagonal_line(index, mark, board):
-    count = 1
-    step = 0
-    for i in range(9 - index // 10):
-        if (index + step + 1) % 10 != 0 and (
-                index + step) // 10 != 9:
-            step += 11
-            if board[index + step] == mark:
-                count += 1
-            else:
-                break
-        else:
-            break
-    step = 0
-    for i in range(index // 10):
-        if (index + step + 1) % 10 != 1 and (
-                index + step) // 10 != 0:
-            step -= 11
-            if board[index + step] == mark:
-                count += 1
-            else:
-                break
-        else:
-            break
-    if count >= 5:
-        return True
-    count = 1
-    step = 0
-    for i in range(9 - index // 10):
-        if (index + step + 1) % 10 != 1 and (
-                index + step) // 10 != 9:
-            step += 9
-            if board[index + step] == mark:
-                count += 1
-            else:
-                break
-        else:
-            break
-    step = 0
-    for i in range(index // 10):
-        if (index + step + 1) % 10 != 0 and (
-                index + step) // 10 != 0:
-            step -= 9
-            if board[index + step] == mark:
-                count += 1
-            else:
-                break
-        else:
-            break
-    if count >= 5:
-        return True
+def computer_ai(board, index_, count_, list_not_optimal_step):
+    cols, rows, fdiag, bdiag = get_dia_row_col()
+    list_not_optimal_step = optimal_var(cols, list_not_optimal_step, 'X')
+    list_not_optimal_step = optimal_var(rows, list_not_optimal_step, 'X')
+    list_not_optimal_step = optimal_var(fdiag, list_not_optimal_step, 'X')
+    list_not_optimal_step = optimal_var(bdiag, list_not_optimal_step, 'X')
+
+    list_not_optimal_step = [x for x in list_not_optimal_step if x != 'X']
+    return list_not_optimal_step
+
+def check_empty_optimal(board, list_not_optimal_step_):
+    empty_cell = []
+    for item in board:
+        for j in item:
+            if j not in list_not_optimal_step_ and j != 'X' and j != 'O':
+                empty_cell.append(j)
+    return empty_cell
+
+def computer_step(board, empty_cell):
+    random.shuffle(empty_cell)
+    for item in board:
+        if empty_cell[0] in item:
+            item[item.index(empty_cell[0])] = 'O'
+
+    return board
+
+def get_left_cell(board):
+    last_empty_cell = []
+    for item in board:
+        for j in item:
+            if j != 'X' and j != 'O':
+                last_empty_cell.append(j)
+    random.shuffle(last_empty_cell)
+
+    return last_empty_cell
+
+def last_computer_step(board, last_empty_cell):
+    for item in board:
+        if last_empty_cell[0] in item:
+            item[item.index(last_empty_cell[0])] = 'O'
+    return board
+
+def running_elem(num, n) :
+    check = []
+    f = 1
+    for i in range(n-1,-1,-1) :
+        if num[i] == num[i-1] and i :
+            check.append(num[i])
+            f = False
+        elif not f :
+            check.append(num[i])
+            f = 1
+    return check
 
 
-def check_gorizontal_line(index, mark, board):
-    count = 1
-    step = 1
-    while True:
-        if (index + 1) % 10 != 0:
-            for i in range(9 - index % 10):
-                if board[index + step] == mark:
-                    count += 1
-                    step += 1
-                else:
-                    break
-        step = -1
-        if (index + 1) % 10 != 1:
-            for i in range(index % 10):
-                if board[index + step] == mark:
-                    count += 1
-                    step -= 1
-                else:
-                    break
-        break
-    if count >= 5:
-        return True
+def get_winner(cols, rows, fdiag, bdiag):
+    marker_winner = 'notwinner'
+    for i in cols:
+        if 'X' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='X', check))) == 4:
+                marker_winner = 'O'
+        if 'O' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='O', check))) == 4:
+                marker_winner = 'X'
+
+    for i in rows:
+        if 'X' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='X', check))) == 4:
+                marker_winner = 'O'
+        if 'O' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='O', check))) == 4:
+                marker_winner = 'X'
 
 
-def check_vertical_line(index, mark, board):
-    count = 1
-    step = 10
-    while True:
-        if index // 10 != 9:
-            for i in range(9 - index // 10):
-                if board[index + step] == mark:
-                    count += 1
-                    step += 10
-                else:
-                    break
-        step = -10
-        if index // 10 != 0:
-            for i in range(index // 10):
-                if board[index + step] == mark:
-                    count += 1
-                    step -= 10
-                else:
-                    break
-        break
-    if count >= 5:
-        return True
+    for i in fdiag:
+        if 'X' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='X', check))) == 4:
+                marker_winner = 'O'
+        if 'O' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='O', check))) == 4:
+                marker_winner = 'X'
 
+    for i in bdiag:
+        if 'X' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='X', check))) == 4:
+                marker_winner = 'O'
+        if 'O' in i:
+            n = len(i)
+            check = running_elem(i, n)
+            if len(list(filter(lambda x: x=='O', check))) == 4:
+                marker_winner = 'X'
 
-def check_game_finish(index, mark, board):
-    if check_gorizontal_line(index, mark, board) or check_vertical_line(index, mark, board) or check_diagonal_line(
-            index, mark, board):
-        return True
-
-
-def replay():
-    decision = ""
-    while decision not in ('да', 'нет'):
-        decision = input(
-            'Хотите сыграть еще разок? Напишите да или нет'
-        ).lower()
-
-    return decision == 'да'
-
-
-def clear_screen():
-    print('\n' * 100)
-
-
-def computer_loose_check(computer_mark, remain_cells, board):
-    remain_cells_in_cycle = remain_cells.copy()
-    for i in range(len(remain_cells)):
-        index = int(random.choice(remain_cells_in_cycle)) - 1
-        remain_cells_in_cycle.remove(board[index])
-        tmp = board[index]
-        put_mark_remove_cell(index, computer_mark, remain_cells, board)
-        if check_game_finish(index, computer_mark, board) and i != len(remain_cells):
-            remain_cells.append(tmp)
-            board[index] = tmp
-            continue
-        elif not check_game_finish(index, computer_mark, board):
-            return True
-        else:
-            return False
-
-
-def start_new_game():
-    board = [str(cell) for cell in range(1, 101)]
-    remain_cells = [str(cell) for cell in range(1, 101)]
-    player_mark, computer_mark = select_mark()
-
-    return board, remain_cells, player_mark, computer_mark
-
-
-player_mark, computer_mark = select_mark()
-
-
-def main_loop(player_mark, computer_mark, board, remain_cells):
-    print_board(board)
-    print('\n\n')
-    while True:
-        if len(remain_cells) > 0:
-            try:  # Ход игрока
-                index = int(input('Укажите номер ячейки : ')) - 1
-                print()
-                assert index in range(100)
-                if check_cell(index, player_mark, board):
-                    print('К сожалению, ячейка уже занята')
-                    continue
-                put_mark_remove_cell(index, player_mark, remain_cells, board)
-                if check_game_finish(index, player_mark, board):
-                    print_board(board)
-                    print('Вы проиграли')
-                    if replay():
-                        board, remain_cells, player_mark, computer_mark = start_new_game()
-                        print_board(board)
-                        print('\n\n')
-                        continue
-                    else:
-                        return
-            except ValueError:
-                print('Вы должны ввести число')
-                continue
-            except AssertionError:
-                print('Введите число строго в диапазоне от 1 до 100')
-                continue
-
-            if computer_loose_check(computer_mark, remain_cells, board):  # Ход компьютера
-                print_board(board)
-                continue
-            else:
-                print_board(board)
-                print('Комп проиграл')
-                if replay():
-                    board, remain_cells, player_mark, computer_mark = start_new_game()
-                    print_board(board)
-                    print('\n\n')
-                    continue
-                else:
-                    return
-            print_board(board)
-        else:
-            print('Ничья! Ура!')
-            if replay():
-                board, remain_cells, player_mark, computer_mark = start_new_game()
-                print_board(board)
-                print('\n\n')
-                continue
-            else:
-                return
-
+    return marker_winner
 
 if __name__ == '__main__':
-    main_loop(player_mark, computer_mark, board, remain_cells)
+    show_board(board)
+    print('Вы играете за X')
+    for i in range(1, 100):
+        step = input('Куда ставите? Нажмите циферку')
+        board, index_, count_ = step_user(step)
+        list_not_optimal_step = computer_ai(board, index_, count_, list_not_optimal_step)
+        list_not_optimal_step_ = sorted(set(list_not_optimal_step), key=list_not_optimal_step.index)
+        empty_cell = check_empty_optimal(board, list_not_optimal_step_)
+        if len(empty_cell) != 0:
+            board = computer_step(board, empty_cell)
+            show_board(board)
+            print(' ')
+            cols, rows, fdiag, bdiag = get_dia_row_col()
+            marker_winner = get_winner(cols, rows, fdiag, bdiag)
+            if marker_winner != 'notwinner':
+                print(f'Победил {marker_winner}')
+                break
+
+        else:
+            last_empty_cell = get_left_cell(board)
+            board = last_computer_step(board, last_empty_cell)
+            show_board(board)
+            print('')
+            cols, rows, fdiag, bdiag = get_dia_row_col()
+            marker_winner = get_winner(cols, rows, fdiag, bdiag)
+            if marker_winner != 'notwinner':
+                print(f'Победил {marker_winner}')
+                break
